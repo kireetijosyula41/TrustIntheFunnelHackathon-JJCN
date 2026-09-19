@@ -68,6 +68,11 @@ function Onboarding({ state, dispatch }: { state: InterviewState; dispatch: Reac
         <StepLabel>Your interview is ready</StepLabel>
         <h1>Hi Maya, meet Sage.</h1>
         <p className="welcome-lede">This is your opportunity to bring the work behind your application to life. Sage will help you share the decisions, context, and impact that a resume cannot capture in 15 to 20 minutes.</p>
+        <section className="why-sage" aria-labelledby="why-sage-title">
+          <span>Why Sage</span>
+          <h2 id="why-sage-title">A consistent chance to be heard.</h2>
+          <p>Every candidate gets dedicated time to explain their work in their own words. Sage asks relevant follow-ups, then gives the recruiter a reviewable transcript. Sage does not make the hiring decision.</p>
+        </section>
         <section className="conversation-roadmap" aria-labelledby="conversation-roadmap-title">
           <div className="roadmap-heading"><div><span>Conversation preview</span><h2 id="conversation-roadmap-title">What Sage may explore</h2></div><p>There are no surprise topics. Sage may ask a short adaptive follow-up when your answer opens a useful thread.</p></div>
           <ol>
@@ -86,36 +91,43 @@ function Onboarding({ state, dispatch }: { state: InterviewState; dispatch: Reac
           <div><span>Your interviewer</span><h2>Sage</h2><p>Warm, focused, and curious about the details behind your work.</p></div>
         </div>
         <div className="topic-preview">
-          <span>Conversation threads</span>
+          <span>Topics from your experience</span>
           {state.application.claims.map((claim, index) => (
             <div key={claim.id}><b>0{index + 1}</b><p>{claim.text}<small>{claim.source.document} · {claim.source.section}</small></p></div>
           ))}
         </div>
         <label className="interview-consent">
           <input type="checkbox" checked={state.consentAccepted} onChange={(event) => dispatch({ type: "SET_CONSENT", accepted: event.target.checked })} />
-          <span><strong>I understand and agree to begin this voice interview.</strong><small>My microphone audio will be transcribed. Camera is preview-only and never part of the recruiter report.</small></span>
+          <span><strong>I understand and agree to microphone recording and transcription for this voice interview.</strong><small>Camera is not required. Any optional self-view is chosen separately on the next step.</small></span>
         </label>
-        <button className="button button-primary welcome-continue" type="button" disabled={!state.consentAccepted} onClick={() => dispatch({ type: "OPEN_PERMISSIONS" })}>Set up microphone and camera <Icon name="arrow" /></button>
+        <button className="button button-primary welcome-continue" type="button" disabled={!state.consentAccepted} onClick={() => dispatch({ type: "OPEN_PERMISSIONS" })}>Set up microphone <Icon name="arrow" /></button>
         <p className="help-copy">Need an accommodation? <a href="mailto:help@claimproof.example">Contact a person before starting.</a></p>
       </aside>
     </main>
   );
 }
 
-function CameraPreview({ stream, demo, label = "Your camera preview" }: { stream: MediaStream | null; demo: boolean; label?: string }) {
+function CameraPreview({ stream, demo, enabled, label = "Optional camera self-view" }: { stream: MediaStream | null; demo: boolean; enabled: boolean; label?: string }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   useEffect(() => {
-    if (videoRef.current && stream) {
+    if (videoRef.current && stream && enabled) {
       videoRef.current.srcObject = stream;
       void videoRef.current.play().catch(() => undefined);
     }
-  }, [stream]);
+  }, [enabled, stream]);
 
+  const className = !enabled ? "camera-preview is-off" : demo ? "camera-preview is-demo" : "camera-preview";
   return (
-    <div className={demo ? "camera-preview is-demo" : "camera-preview"} aria-label={label}>
-      {stream ? <video ref={videoRef} muted playsInline /> : <div className="demo-face" aria-hidden="true"><span>MC</span></div>}
-      <div className="preview-label"><i />{demo ? "Demo preview" : "Camera on · local preview"}</div>
-      <div className="preview-shield"><Icon name="lock" /> Never recorded or analyzed</div>
+    <div className={className} aria-label={label}>
+      {!enabled ? (
+        <div className="camera-off-visual"><Icon name="camera" /><strong>Camera off</strong><span>Optional familiar self-view</span></div>
+      ) : stream ? (
+        <video ref={videoRef} muted playsInline />
+      ) : (
+        <div className="demo-face" aria-hidden="true"><span>MC</span></div>
+      )}
+      <div className="preview-label"><i />{!enabled ? "Off by default" : demo ? "Demo self-view" : "On-device self-view"}</div>
+      <div className="preview-shield"><Icon name="lock" /> {!enabled ? "No camera permission requested" : "Never recorded, uploaded, or analyzed"}</div>
     </div>
   );
 }
@@ -138,25 +150,25 @@ function Permissions({
     <main className="permission-shell" id="main-content">
       <section className="permission-copy">
         <StepLabel>Device setup · one-time permission</StepLabel>
-        <h1>Let’s make sure we can hear and see you.</h1>
-        <p>Your browser will ask for microphone and camera access. Only microphone audio becomes part of the interview record.</p>
+        <h1>Let’s make sure we can hear you.</h1>
+        <p>Your browser will ask for microphone access so Sage can transcribe your answers. Camera stays off unless you explicitly choose the optional self-view below.</p>
         <div className="permission-ledger">
-          <div><span><Icon name="mic" /></span><p><strong>Microphone</strong>Recorded during each answer and converted into the conversation transcript.</p><b className={ready ? "ready" : ""}>{ready ? "Ready" : "Required"}</b></div>
-          <div><span><Icon name="camera" /></span><p><strong>Camera</strong>Shown back to you as a live preview. Never recorded, uploaded, analyzed, or shared.</p><b className={ready ? "ready" : ""}>{ready ? "Ready" : "Preview only"}</b></div>
+          <div><span><Icon name="mic" /></span><p><strong>Microphone</strong>Required for voice answers and the recruiter-reviewable transcript.</p><b className={ready ? "ready" : ""}>{ready ? "Ready" : "Required"}</b></div>
+          <label className="camera-choice"><input type="checkbox" checked={state.cameraOptIn} disabled={ready} onChange={(event) => dispatch({ type: "SET_CAMERA_OPT_IN", enabled: event.target.checked })} /><span><Icon name="camera" /></span><p><strong>Optional camera self-view</strong>A familiar view of yourself during the interview. The stream stays on-device and is never recorded, uploaded, analyzed, or included in the recruiter report.</p><b className={state.cameraOptIn ? "ready" : ""}>{state.cameraOptIn ? "Opted in" : "Off by default"}</b></label>
         </div>
         <div className="privacy-promise"><Icon name="lock" /><p><strong>No biometric or behavioral analysis.</strong> ClaimProof does not analyze your face, voice, accent, tone, emotion, timing, eye contact, or environment.</p></div>
         {state.permissionMessage ? <p className={ready ? "device-message ready" : "device-message"} role="status">{state.permissionMessage}</p> : null}
         <div className="permission-actions">
-          {!ready ? <button className="button button-primary" type="button" disabled={checking} onClick={onRequest}>{checking ? "Waiting for browser..." : "Allow microphone and camera"}</button> : null}
-          {!ready ? <button className="button button-light" type="button" onClick={() => dispatch({ type: "USE_DEMO_DEVICES" })}>Use demo devices</button> : null}
+          {!ready ? <button className="button button-primary" type="button" disabled={checking} onClick={onRequest}>{checking ? "Waiting for browser..." : state.cameraOptIn ? "Allow microphone and camera" : "Allow microphone"}</button> : null}
+          {!ready ? <button className="button button-light" type="button" onClick={() => dispatch({ type: "USE_DEMO_DEVICES" })}>Use demo microphone</button> : null}
           {ready ? <button className="button button-primary" type="button" onClick={() => dispatch({ type: "START_INTERVIEW", now: Date.now() })}>Start interview with Sage <Icon name="arrow" /></button> : null}
         </div>
-        {!ready ? <p className="demo-explanation">Demo devices provide a deterministic voice and preview simulation when browser or hardware access is unavailable.</p> : null}
+        {!ready ? <p className="demo-explanation">Demo mode provides deterministic voice capture when browser or microphone access is unavailable. Camera remains optional.</p> : null}
       </section>
       <aside className="permission-preview">
-        <CameraPreview stream={stream} demo={state.permissionMode === "demo" || !stream} />
-        <h2>{ready ? "Looking good." : "Your preview will appear here."}</h2>
-        <p>The frame helps you settle in. Nothing from this camera view leaves your browser.</p>
+        <CameraPreview stream={stream} demo={state.permissionMode === "demo"} enabled={state.cameraOptIn} />
+        <h2>{state.cameraOptIn ? ready ? "Your self-view is ready." : "Optional self-view selected." : "Camera is off."}</h2>
+        <p>{state.cameraOptIn ? "This familiar self-view stays on your device and never enters the interview record." : "You can complete the entire polished voice interview without camera access."}</p>
       </aside>
     </main>
   );
@@ -216,9 +228,9 @@ function InterviewWorkspace({ state, dispatch, stream, now, offline }: { state: 
         </article>
       </section>
       <aside className="candidate-rail">
-        <CameraPreview stream={stream} demo={demo} />
+        <CameraPreview stream={stream} demo={demo} enabled={state.cameraOptIn} />
         <div className="candidate-card"><span>Candidate</span><strong>{state.application.candidateName}</strong><small>{state.application.roleTitle}</small></div>
-        <div className="session-guardrails"><span>Session guardrails</span><p><i /> Camera preview stays local</p><p><i /> Voice content only</p><p><i /> No behavioral analysis</p></div>
+        <div className="session-guardrails"><span>Session guardrails</span><p><i /> {state.cameraOptIn ? "Optional self-view stays on-device" : "Camera is off"}</p><p><i /> Voice content only</p><p><i /> No behavioral analysis</p></div>
         <a href="mailto:help@claimproof.example" className="rail-help">Need help or an accommodation?</a>
       </aside>
     </main>
@@ -231,6 +243,7 @@ function Completion({ state, onReset }: { state: InterviewState; onReset: () => 
     interview: {
       format: "voice",
       questionsAnswered: state.answers.length,
+      optionalCameraSelfViewUsed: state.cameraOptIn,
       cameraIncluded: false,
       behavioralSignalsIncluded: false,
     },
@@ -317,7 +330,7 @@ export function CandidateExperience() {
   const requestDevices = async () => {
     setChecking(true);
     try {
-      const media = await requestInterviewDevices();
+      const media = await requestInterviewDevices(state.cameraOptIn);
       setStream(media);
       dispatch({ type: "PERMISSIONS_GRANTED" });
     } catch (error) {

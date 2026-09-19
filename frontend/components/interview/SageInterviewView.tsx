@@ -59,17 +59,17 @@ function CameraPreview() {
     } catch {
       stream.current?.getTracks().forEach(track => track.stop());
       stream.current = null;
-      setMessage("Camera unavailable. You can continue with voice or text.");
+      setMessage("Optional self-view unavailable. You can continue the complete interview without camera access.");
     } finally { if (active.current) setBusy(false); }
   }
-  return <section className="optional-camera" aria-label="Your camera preview">
-    <div className="camera-preview">
+  return <section className="optional-camera" aria-label="Optional camera self-view">
+    <div className={enabled ? "camera-preview" : "camera-preview is-off"}>
       <video ref={video} muted playsInline hidden={!enabled} />
-      {!enabled && <div className="demo-face"><span>CP</span></div>}
-      <div className="preview-label">{enabled ? "Camera on · local preview" : "Camera off · optional"}</div>
-      <div className="preview-shield">Never recorded or analyzed</div>
+      {!enabled && <div className="camera-off-visual"><strong>Camera off</strong><span>Optional familiar self-view</span></div>}
+      <div className="preview-label">{enabled ? "On-device self-view" : "Off by default"}</div>
+      <div className="preview-shield">{enabled ? "Never recorded, uploaded, analyzed, or shared" : "No camera permission requested"}</div>
     </div>
-    <button type="button" className="text-action" disabled={busy} onClick={toggle}>{enabled ? "Turn off camera preview" : "Enable camera preview"}</button>
+    <button type="button" className="text-action" disabled={busy} onClick={toggle}>{enabled ? "Turn off optional self-view" : "Enable optional self-view"}</button>
     {message && <p role="status">{message}</p>}
   </section>;
 }
@@ -82,13 +82,13 @@ export function SageInterviewView(props: Props) {
   const progress = session?.report ? 100 : Math.round(claimIndex / 3 * 100);
   return <div className="app-frame sage-app integrated-sage">
     <a className="skip-link" href="#main-content">Skip to main content</a>
-    <header className="sage-header">
+    {(!session || !question) && <header className="sage-header">
       <Link className="brand" href="/candidate"><span className="brand-mark">CP</span>ClaimProof</Link>
       <nav className="sage-header-meta" aria-label="Session navigation">
         <Link href="/recruiter">Recruiter view</Link>
         {session && <><Link href={`/traces/${session.id}?source=${session.mode}`}>Session trace</Link><button className="text-action" disabled={busy} onClick={props.reset}>Reset demo</button></>}
       </nav>
-    </header>
+    </header>}
     {error && <p role="alert" className="integration-alert">{error}</p>}
     {notice && <p role="status" className="integration-notice">{notice}</p>}
     {busy && <p role="status" className="integration-notice">Saving or loading…</p>}
@@ -97,21 +97,27 @@ export function SageInterviewView(props: Props) {
         <div className="welcome-person"><span>Your demo application</span><strong>Machine Learning Engineer</strong><small>Three claims · one focused conversation</small></div>
         <p className="step-label">Your interview is ready</p>
         <h1>Meet Sage.</h1>
-        <p className="welcome-lede">Bring the work behind your application to life. Share the decisions, context, and impact that a resume cannot capture.</p>
+        <p className="welcome-lede">This is your opportunity to bring the work behind your application to life and add the context a resume cannot capture.</p>
+        <section className="why-sage" aria-labelledby="why-sage-title">
+          <span>Why Sage</span><h2 id="why-sage-title">A consistent chance to be heard.</h2>
+          <p>Every candidate gets dedicated time to explain their work in their own words. Sage asks relevant follow-ups, then gives the recruiter a reviewable transcript. Sage does not make the hiring decision.</p>
+        </section>
         <section className="conversation-roadmap" aria-labelledby="roadmap-title">
-          <div className="roadmap-heading"><div><span>Conversation preview</span><h2 id="roadmap-title">What Sage may explore</h2></div><p>Questions follow your application claims. A short adaptive follow-up may help you explain an important detail.</p></div>
+          <div className="roadmap-heading"><div><span>Conversation preview</span><h2 id="roadmap-title">What Sage may explore</h2></div><p>There are no surprise topics. Sage may ask a short adaptive follow-up when your answer opens a useful thread.</p></div>
           <ol>{[
+            ["Your story", "Who you are and what motivates you"],
             ["Relevant work", "Projects and experience connected to this role"],
             ["Your contribution", "What you personally owned"],
             ["Outcomes", "Measured results and supporting evidence"],
             ["Your judgment", "Decisions, trade-offs, and lessons"],
+            ["Anything else", "A final chance to add helpful context"],
           ].map(([title, description], index) => <li key={title}><span>0{index + 1}</span><p><strong>{title}</strong>{description}</p></li>)}</ol>
         </section>
       </section>
       <aside className="welcome-side">
         <div className="sage-intro-card"><div className="sage-orb" aria-hidden="true"><i /><i /><span>S</span></div><div><span>Your interviewer</span><h2>Sage</h2><p>Curious about the details behind your work.</p></div></div>
-        <div className="topic-preview"><span>Conversation threads · fictional demo</span>{fixture.claims.map((item, index) => <div key={item.id}><b>0{index + 1}</b><p>{item.source_excerpt}<small>From the seeded resume</small></p></div>)}</div>
-        <label className="interview-consent"><input type="checkbox" checked={consent} onChange={e => props.setConsent(e.target.checked)} /><span><strong>I understand how the demo uses my answers.</strong><small>Connected answers are saved to the local backend; offline answers stay in this browser. Voice and text are equal options. Camera is an optional local preview and is never recorded or assessed.</small></span></label>
+        <div className="topic-preview"><span>Topics from your experience · fictional demo</span>{fixture.claims.map((item, index) => <div key={item.id}><b>0{index + 1}</b><p>{item.source_excerpt}<small>From the seeded resume</small></p></div>)}</div>
+        <label className="interview-consent"><input type="checkbox" checked={consent} onChange={e => props.setConsent(e.target.checked)} /><span><strong>I understand how the demo records and transcribes my answers.</strong><small>Connected answers are saved to the local backend; offline answers stay in this browser. Camera is off by default and any optional self-view stays on-device, is never recorded, and is not included in the recruiter report.</small></span></label>
         <div className="welcome-actions"><button className="button button-primary" disabled={busy || !consent} onClick={() => props.start("live")}>Start connected demo</button><button className="button button-light" disabled={busy || !consent} onClick={() => props.start("offline")}>Start offline rehearsal</button></div>
       </aside>
     </main> : question ? <main className="sage-workspace" id="main-content">
@@ -139,7 +145,7 @@ export function SageInterviewView(props: Props) {
         </article>
         <section className="sage-evidence"><h2>Supporting evidence for the RAG claim</h2><p>The controlled artifact is fictional. Live retrieval requires an approved public host.</p><a href="/demo-artifact" target="_blank">Inspect synthetic artifact</a><div className="evidence-controls"><select aria-label="Evidence mode" value={props.evidenceMode} onChange={e => props.setEvidenceMode(e.target.value as "fixture" | "live")}><option value="fixture">Synthetic fixture</option><option value="live">Live public page</option></select><input aria-label="Evidence URL" value={props.evidenceUrl} onChange={e => props.setEvidenceUrl(e.target.value)} /><button className="button button-dark" disabled={busy} onClick={props.attach}>Attach evidence</button></div>{session.evidence.map(item => <p key={item.id}>{item.source_label}: {item.limitations}</p>)}</section>
       </section>
-      <aside className="candidate-rail"><CameraPreview /><div className="candidate-card"><span>Candidate application</span><strong>Machine Learning Engineer</strong><small>Fictional demo · three claims</small></div><details className="source-claims"><summary>Review all three source claims</summary>{session.claims.map(item => <blockquote key={item.id}>{item.source_excerpt}</blockquote>)}</details><div className="session-guardrails"><span>Session guardrails</span><p>Camera preview stays local</p><p>Voice and text are equal</p><p>No behavioral analysis</p></div></aside>
+      <aside className="candidate-rail"><CameraPreview /><div className="candidate-card"><span>Candidate application</span><strong>Machine Learning Engineer</strong><small>Fictional demo · three claims</small></div><details className="source-claims"><summary>Review all three source claims</summary>{session.claims.map(item => <blockquote key={item.id}>{item.source_excerpt}</blockquote>)}</details><div className="session-guardrails"><span>Session guardrails</span><p>Camera is off by default</p><p>Optional self-view stays on-device</p><p>No behavioral analysis or hiring decision</p></div></aside>
     </main> : <main className="thank-you-shell" id="main-content">
       <section className="thank-you-hero"><p className="step-label">Conversation complete</p><h1>Conversation complete</h1><p>Thank you for sharing the work behind your application. Your answers and supporting evidence are ready for review.</p></section>
       <section className="handoff-card"><div className="handoff-heading"><div><p className="step-label">Transparent handoff</p><h2>What the recruiter receives</h2></div><span>{session.answers.length} answers · 3 claims</span></div><div className="handoff-grid"><div><span>Included</span><ul><li>Application claims and their sources</li><li>Questions and reviewed answer transcripts</li><li>Evidence, limitations, and unresolved questions</li></ul></div><div><span>Never included</span><ul><li>Camera preview or images</li><li>Facial, vocal, or behavioral analysis</li><li>An honesty or hiring score</li></ul></div></div></section>

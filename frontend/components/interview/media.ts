@@ -1,6 +1,6 @@
 export type DeviceFailure = "denied" | "unavailable";
 
-export async function requestInterviewDevices(): Promise<MediaStream> {
+export async function requestInterviewDevices(includeCamera: boolean): Promise<MediaStream> {
   if (!navigator.mediaDevices?.getUserMedia) {
     throw new DOMException("Media capture is unavailable", "NotSupportedError");
   }
@@ -10,11 +10,13 @@ export async function requestInterviewDevices(): Promise<MediaStream> {
       echoCancellation: true,
       noiseSuppression: true,
     },
-    video: {
-      facingMode: "user",
-      width: { ideal: 1280 },
-      height: { ideal: 720 },
-    },
+    video: includeCamera
+      ? {
+          facingMode: "user",
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+        }
+      : false,
   });
 }
 

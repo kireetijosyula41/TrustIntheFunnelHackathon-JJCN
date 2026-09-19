@@ -15,6 +15,7 @@ describe("voice interview state machine", () => {
 
     let state = interviewReducer(initialInterviewState, { type: "SET_CONSENT", accepted: true });
     state = interviewReducer(state, { type: "OPEN_PERMISSIONS" });
+    expect(state.cameraOptIn).toBe(false);
     expect(interviewReducer(state, { type: "START_INTERVIEW", now: 1000 }).phase).toBe("permissions");
 
     state = interviewReducer(state, { type: "USE_DEMO_DEVICES" });

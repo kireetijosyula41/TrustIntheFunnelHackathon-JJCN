@@ -15,6 +15,7 @@ export interface InterviewState {
   activeQuestionIndex: number;
   answers: InterviewAnswer[];
   consentAccepted: boolean;
+  cameraOptIn: boolean;
   permissionMode: PermissionMode;
   permissionMessage: string | null;
   startedAt: number | null;
@@ -27,6 +28,7 @@ export const initialInterviewState: InterviewState = {
   activeQuestionIndex: 0,
   answers: [],
   consentAccepted: false,
+  cameraOptIn: false,
   permissionMode: null,
   permissionMessage: null,
   startedAt: null,
@@ -35,6 +37,7 @@ export const initialInterviewState: InterviewState = {
 export type InterviewAction =
   | { type: "SET_CONSENT"; accepted: boolean }
   | { type: "OPEN_PERMISSIONS" }
+  | { type: "SET_CAMERA_OPT_IN"; enabled: boolean }
   | { type: "PERMISSIONS_GRANTED" }
   | { type: "PERMISSIONS_FAILED"; message: string }
   | { type: "USE_DEMO_DEVICES" }
@@ -53,11 +56,20 @@ export function interviewReducer(
     case "OPEN_PERMISSIONS":
       if (!state.consentAccepted) return state;
       return { ...state, phase: "permissions", permissionMessage: null };
+    case "SET_CAMERA_OPT_IN":
+      return {
+        ...state,
+        cameraOptIn: action.enabled,
+        permissionMode: null,
+        permissionMessage: null,
+      };
     case "PERMISSIONS_GRANTED":
       return {
         ...state,
         permissionMode: "live",
-        permissionMessage: "Microphone and camera are ready. Camera stays in local preview only.",
+        permissionMessage: state.cameraOptIn
+          ? "Microphone and optional on-device camera preview are ready."
+          : "Microphone is ready. Camera remains off.",
       };
     case "PERMISSIONS_FAILED":
       return { ...state, permissionMode: null, permissionMessage: action.message };
@@ -65,7 +77,9 @@ export function interviewReducer(
       return {
         ...state,
         permissionMode: "demo",
-        permissionMessage: "Demo microphone and camera preview are ready. No live device access is in use.",
+        permissionMessage: state.cameraOptIn
+          ? "Demo microphone and optional camera preview are ready. No live device access is in use."
+          : "Demo microphone is ready. Camera remains off and no live device access is in use.",
       };
     case "START_INTERVIEW":
       if (!state.permissionMode) return state;
@@ -109,7 +123,7 @@ export function interviewReducer(
       };
     }
     case "RESTORE": {
-      const restored = action.state;
+      const restored = { ...action.state, cameraOptIn: Boolean(action.state.cameraOptIn) };
       if (restored.phase === "interview" && restored.permissionMode === "live") {
         return {
           ...restored,

@@ -374,7 +374,11 @@ h1, h2, h3 { text-wrap: balance; }
 .welcome-person small { align-self: center; color: var(--ink-muted); font-size: 10px; }
 .welcome-copy h1 { margin: 0 0 24px; font: 500 clamp(62px, 8vw, 105px)/.9 var(--serif); letter-spacing: -.055em; }
 .welcome-lede { max-width: 690px; color: var(--ink-muted); font-size: clamp(18px, 1.8vw, 23px); line-height: 1.55; }
-.conversation-roadmap { margin-top: 42px; padding-top: 21px; border-top: 1px solid var(--line); }
+.why-sage { display: grid; grid-template-columns: 95px 1fr; gap: 2px 20px; margin-top: 34px; padding: 17px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.why-sage > span { grid-row: 1 / span 2; color: var(--rust); font-size: 8px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
+.why-sage h2 { margin: 0; font: 500 22px var(--serif); }
+.why-sage p { margin: 4px 0 0; color: var(--ink-muted); font-size: 9px; line-height: 1.55; }
+.conversation-roadmap { margin-top: 24px; }
 .roadmap-heading { display: grid; grid-template-columns: 1fr 1.1fr; gap: 26px; align-items: end; margin-bottom: 16px; }
 .roadmap-heading span { color: var(--rust); font-size: 8px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
 .roadmap-heading h2 { margin: 3px 0 0; font: 500 25px var(--serif); }
@@ -435,6 +439,10 @@ h1, h2, h3 { text-wrap: balance; }
 .camera-preview { position: relative; aspect-ratio: 4 / 3; overflow: hidden; background: #263a31; }
 .camera-preview video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
 .camera-preview.is-demo { background: radial-gradient(circle at 50% 34%, #647b6d 0 12%, #344b40 12.5% 23%, #1e3229 23.5% 100%); }
+.camera-preview.is-off { background: #dfddd6; }
+.camera-off-visual { width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #667069; }
+.camera-off-visual strong { font: 500 21px var(--serif); }
+.camera-off-visual span { margin-top: 2px; font-size: 8px; text-transform: uppercase; letter-spacing: .07em; }
 .demo-face { width: 100%; height: 100%; display: grid; place-items: center; background: linear-gradient(145deg, transparent 50%, rgba(255,255,255,.05)); }
 .demo-face span { width: 78px; height: 78px; display: grid; place-items: center; border-radius: 50%; background: rgba(247,239,222,.16); color: #f7efde; font: 500 24px var(--serif); border: 1px solid rgba(255,255,255,.18); }
 .preview-label, .preview-shield { position: absolute; display: flex; align-items: center; gap: 6px; padding: 6px 8px; border-radius: 2px; background: rgba(16,28,23,.72); color: white; font-size: 8px; backdrop-filter: blur(7px); }
@@ -636,7 +644,7 @@ h1, h2, h3 { text-wrap: balance; }
   .recording-control button.button-stop { background: var(--rust); color: white; }
   .recording-control > .mic-mark { display: none; }
   .sage-header-meta { flex-wrap: wrap; gap: 16px; }
-  .sage-workspace { grid-template-columns: 210px minmax(0, 1fr) 260px; min-height: calc(100vh - 76px); }
+  .sage-workspace { grid-template-columns: 210px minmax(0, 1fr) 260px; min-height: 100vh; }
   .interview-conversation { padding-inline: clamp(20px, 3vw, 45px); }
   .sage-asks > p, .history-speaker p, .candidate-card small, .session-guardrails p, .sage-panel > p { font-size: 13px; }
   @media (max-width: 1000px) { .sage-workspace { grid-template-columns: 155px minmax(0, 1fr); } }

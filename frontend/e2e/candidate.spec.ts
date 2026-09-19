@@ -11,8 +11,11 @@ test("Sage previews source claims before consent and fits a mobile viewport", as
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/candidate");
   await expect(page.getByRole("heading", { name: "Meet Sage." })).toBeVisible();
+  await expect(page.getByText("A consistent chance to be heard.")).toBeVisible();
+  await expect(page.getByText(/Sage does not make the hiring decision/)).toBeVisible();
+  await expect(page.getByText("Topics from your experience · fictional demo")).toBeVisible();
   await expect(page.getByRole("heading", { name: "What Sage may explore" })).toBeVisible();
-  for (const area of ["Relevant work", "Your contribution", "Outcomes", "Your judgment"]) {
+  for (const area of ["Your story", "Relevant work", "Your contribution", "Outcomes", "Your judgment", "Anything else"]) {
     await expect(page.getByText(area, { exact: true })).toBeVisible();
   }
   await expect(page.getByText(/Built a hybrid Neo4j/)).toBeVisible();
@@ -20,20 +23,29 @@ test("Sage previews source claims before consent and fits a mobile viewport", as
   await expect(page.getByRole("button", { name: "Start offline rehearsal" })).toBeDisabled();
   await page.screenshot({ path: "test-results/sage-mobile-welcome.png", fullPage: true });
   await start(page);
+  await expect(page.getByRole("banner")).toHaveCount(0);
+  await expect(page.getByLabel("Optional camera self-view")).toContainText("Camera off");
   await expect(page.getByLabel("Your answer", { exact: true })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   await page.screenshot({ path: "test-results/sage-mobile-interview.png", fullPage: true });
 });
 
-test("device denial preserves the typed interview and follow-up", async ({ page }) => {
+test("camera stays off until explicit opt-in and denial preserves the interview", async ({ page }) => {
   await page.addInitScript(() => {
+    (window as typeof window & { __cameraRequests?: number }).__cameraRequests = 0;
     Object.defineProperty(navigator, "mediaDevices", { configurable: true, value: {
-      getUserMedia: () => Promise.reject(new DOMException("Permission denied", "NotAllowedError")),
+      getUserMedia: () => {
+        (window as typeof window & { __cameraRequests?: number }).__cameraRequests = ((window as typeof window & { __cameraRequests?: number }).__cameraRequests ?? 0) + 1;
+        return Promise.reject(new DOMException("Permission denied", "NotAllowedError"));
+      },
     } });
   });
   await start(page);
-  await page.getByRole("button", { name: "Enable camera preview" }).click();
-  await expect(page.getByText("Camera unavailable. You can continue with voice or text.")).toBeVisible();
+  expect(await page.evaluate(() => (window as typeof window & { __cameraRequests?: number }).__cameraRequests)).toBe(0);
+  await expect(page.getByLabel("Optional camera self-view")).toContainText("No camera permission requested");
+  await page.getByRole("button", { name: "Enable optional self-view" }).click();
+  expect(await page.evaluate(() => (window as typeof window & { __cameraRequests?: number }).__cameraRequests)).toBe(1);
+  await expect(page.getByText("Optional self-view unavailable. You can continue the complete interview without camera access.")).toBeVisible();
   await page.getByRole("button", { name: "Start microphone" }).click();
   await expect(page.getByText(/Microphone access was not allowed/).first()).toBeVisible();
   await page.getByLabel("Your answer", { exact: true }).fill("I used Neo4j for RAG.");
@@ -47,9 +59,9 @@ test("recorded audio previews a labeled fixture and preserves the reviewed corre
   const errors: string[] = [];
   page.on("pageerror", error => errors.push(error.message));
   await start(page);
-  await page.getByRole("button", { name: "Enable camera preview" }).click();
-  await expect(page.getByText("Camera on · local preview", { exact: true })).toBeVisible();
-  await page.getByRole("button", { name: "Turn off camera preview" }).click();
+  await page.getByRole("button", { name: "Enable optional self-view" }).click();
+  await expect(page.getByText("On-device self-view", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Turn off optional self-view" }).click();
   await page.getByRole("button", { name: "Start microphone" }).click();
   await expect(page.getByText("Microphone recording", { exact: true })).toBeVisible();
   // Let the fake device produce a nonempty recording for the real multipart endpoint.
